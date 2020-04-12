@@ -1,3 +1,5 @@
-Server/Bin/x64/
-Server/Bin/x86/
+Server/Bin/x64/*
+Server/Bin/x86/*
+!Server/Bin/x64/.gitkeep
+!Server/Bin/x86/.gitkeep
 *.o
