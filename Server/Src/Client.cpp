@@ -42,7 +42,6 @@ void Client::listen()
         iResult = recv(*socket, buffer, length, 0);
         if (iResult > 0)
         {
-        	Logger::print("Pacote de tamanho " + to_string(iResult) + " foi recebido :" + buffer);
            	msgHandler(buffer);           
         }
         else if (iResult == 0)
@@ -75,6 +74,10 @@ void Client::msgHandler(const char* buffer)
 		case MESSID_LOGIN_REQUEST:
 			loginRequest(buffer);
 		break;
+
+		case MESSID_REGISTER_REQUEST:
+			registerRequest(buffer);
+		break;
 	}
 }
 
@@ -96,16 +99,69 @@ void Client::loginRequest(const char* buffer)
 		++index;
 	}
 	
-	Logger::print("Username: " + username);
-	Logger::print("Password: " + password);
+	Server* server = Server::getInstance();
 
-	const int responseSize = 2;
-	char response[responseSize];
+	string queryStr = 
+		"SELECT * FROM accounts WHERE username = '" + username + "' AND password = '" + password + "'";
+
+	pqxx::row row = server->query1(queryStr);
+
+	char response[2];
 	response[0] = MESSID_LOGIN_REQUEST;
-	response[1] = (username.compare("Hitsuji") == 0 && password.compare("123") == 0) ? true : false;
+	if(row.size() > 0)
+	{
+		response[1] = true;
+	}
+	else
+	{
+		response[1] = false;
+	}
 
-    int iResult = send(*socket, response, responseSize, 0);
+    int iResult = send(*socket, response, 2, 0);
+    if (iResult == SOCKET_ERROR)
+    {
+        LOG("Falha ao enviar o pacote");
+        closesocket(*socket);
+    }        
+}
 
+void Client::registerRequest(const char* buffer)
+{
+	string username;
+	string password;
+
+	int index = 1;
+	while(buffer[index] != 0)
+	{
+		username += buffer[index];
+		++index;
+	}
+	++index;
+	while(buffer[index] != 0)
+	{
+		password += buffer[index];
+		++index;
+	}
+	
+	Server* server = Server::getInstance();
+
+	string queryStr = 
+		"INSERT INTO accounts (username, password) VALUES ('" + username + "', '" + password + "')";
+
+	char response[2];
+	response[0] = MESSID_REGISTER_REQUEST;
+	if(server->insertQuery(queryStr))
+	{
+		response[1] = true;
+		LOG("Cadastro realizado com sucesso");
+	}
+	else
+	{
+		response[1] = false;
+		LOG("Falha no cadastro");
+	}
+
+    int iResult = send(*socket, response, 2, 0);
     if (iResult == SOCKET_ERROR)
     {
         LOG("Falha ao enviar o pacote");

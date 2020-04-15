@@ -25,6 +25,7 @@ private:
 	void listen();
 	void startListen();
 	void loginRequest(const char * buffer);
+	void registerRequest(const char* buffer);
 	void msgHandler(const char * buffer);
 	friend class Server;
 };

@@ -7,6 +7,7 @@
 #include <list>
 #include <memory>
 #include "Client.h"
+#include <pqxx/pqxx>
 
 using namespace std;
 
@@ -15,13 +16,20 @@ typedef shared_ptr<Client> clientPtr;
 class Server
 {
 public:
-	static Server* getInstance();
-	static void close();
 	bool initialize();
-	const future<void>& getExitSignal();
 	void wait();
 
+	static Server* getInstance();
+	static void close();
+
+	const future<void>& getExitSignal();
+
+	bool insertQuery(const string& queryStr);
+	const pqxx::row query1(const string& queryStr);
+	const pqxx::result query(const string& queryStr);	
+
 private:
+	pqxx::connection* pqConn;
 	SOCKET listenSocket = INVALID_SOCKET;
 	list<clientPtr> clientList;
 	static Server* _this;

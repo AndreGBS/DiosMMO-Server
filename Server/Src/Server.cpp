@@ -1,13 +1,15 @@
-#include "Server.h"
-#include "Logger.h"
-#include "Client.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
 #include <iostream>
 #include <future>
-#include "Definitions.h"
 #include <chrono>
+#include "Definitions.h"
+#include "Server.h"
+#include "Logger.h"
+#include "Client.h"
+#include <pqxx/pqxx>
+#include <fstream>
 
 using namespace std;
 
@@ -34,6 +36,7 @@ Server::~Server()
     closesocket(listenSocket);
     WSACleanup(); 
     Logger::print("Server finalizado");
+    delete pqConn;
 }
 
 void Server::close()
@@ -60,8 +63,23 @@ bool Server::initialize()
 {
     LOG("Iniciando o servidor");
 
+    LOG("Conectando ao banco de dados");
+    try
+    {
+        ifstream options("options.txt");
+        char credentials[256];
+        options.getline(credentials, 256);
+        pqConn = new pqxx::connection(credentials);
+    }
+    catch(const exception& e)
+    {
+        LOG("Falha ao conectar com o banco de dados");
+        LOG(e.what());
+        return false;
+    }
+    LOG("Conectou com o banco de dados");
+    
     int iResult;
-
     iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
     if (iResult != 0)
     {
@@ -152,9 +170,38 @@ const future<void>& Server::getExitSignal()
     return exitFuture;
 }
 
+bool Server::insertQuery(const string& queryStr)
+{
+    try
+    {
+        pqxx::work query(*pqConn);
+        query.exec0(queryStr); 
+        query.commit();
+        return true;
+    }
+    catch(const exception& e)
+    {
+        LOG("Exception " + string(e.what()));
+        return false;
+    }
+}
+
+const pqxx::row Server::query1(const string& queryStr)
+{
+    pqxx::row result;
+    try
+    {
+        pqxx::work query(*pqConn);
+        result = query.exec1(queryStr); 
+    }
+    catch(const exception& e)
+    {
+        LOG("Exception " + string(e.what()));
+    }
+    return result;
+}
+
 void Server::wait()
 {
     exitFuture.wait();
 }
-
-

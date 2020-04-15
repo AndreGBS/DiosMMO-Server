@@ -20,6 +20,7 @@ int main()
 	else
 	{
 		sv->close();
+		return false;
 	}
 
 	sv->wait();
