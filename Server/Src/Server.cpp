@@ -127,6 +127,7 @@ bool Server::initialize()
     exitFuture = exitSignal.get_future();
     listenThread = async(waitForConnections, this);
     consoleThread = async(console, this);
+    updateThread = async(update, this);
 
     return true;
 }
@@ -135,7 +136,7 @@ void Server::waitForConnections()
 {
     LOG("Esperando por conexoes");
 
-    while(true && !SERVER_EXITED)
+    while(!SERVER_EXITED)
     {
         sockPtr clientSocket = make_shared<SOCKET>();
 
@@ -156,13 +157,23 @@ void Server::waitForConnections()
 void Server::console()
 {
     LOG("Console iniciado");
-    while(true && !SERVER_EXITED)
+    while(!SERVER_EXITED)
     {
         string command;
         cin >> command;
         if(command.compare("quit") == 0)
             exitSignal.set_value();
     }
+}
+
+void Server::update()
+{
+    while(!SERVER_EXITED)
+    {
+        for(const auto& client : clientList)
+            client->update();
+        Sleep(16);
+    }   
 }
 
 const future<void>& Server::getExitSignal()

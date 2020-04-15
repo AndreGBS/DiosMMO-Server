@@ -10,4 +10,11 @@ switch(messid)
 	case 1:
 		show_message("Register :" + string(buffer_read(buff, buffer_u8)));
 	break;
+	
+	case MESSID_PLAYER_ATT_REQUEST:
+		if(!instance_exists(objPlayer))
+			instance_create_layer(0, 0, "Instances", objPlayer);
+		objPlayer.x = buffer_read(buff, buffer_s32);
+		objPlayer.y = buffer_read(buff, buffer_s32);
+	break;
 }

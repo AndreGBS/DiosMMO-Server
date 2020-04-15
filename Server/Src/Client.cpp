@@ -9,6 +9,7 @@
 #include "windows.h"
 #include "Definitions.h"
 #include <future>
+#include <iostream>
 
 using namespace std;
 
@@ -77,6 +78,14 @@ void Client::msgHandler(const char* buffer)
 
 		case MESSID_REGISTER_REQUEST:
 			registerRequest(buffer);
+		break;
+
+		case MESSID_PLAYER_INPUT:
+			playerInput(buffer);
+		break;
+
+		case MESSID_PLAYER_ATT_REQUEST:
+			playerAttRequest(buffer);
 		break;
 	}
 }
@@ -167,4 +176,37 @@ void Client::registerRequest(const char* buffer)
         LOG("Falha ao enviar o pacote");
         closesocket(*socket);
     }        
+}
+
+void Client::playerInput(const char* buffer)
+{
+	for(int i = 0;i < 4; ++i)
+		inputs[i] = buffer[i+1];
+}
+
+void Client::playerAttRequest(const char* buffer)
+{
+	int posX = (int)position[0];
+	int posY = (int)position[1];
+	char response[sizeof(int)*2+1];
+
+	response[0] = MESSID_PLAYER_ATT_REQUEST;
+	memcpy(response+1, &posX, sizeof(int));
+	memcpy(response+1+sizeof(int), &posY, sizeof(int));
+
+    int iResult = send(*socket, response, sizeof(response), 0);
+    if (iResult == SOCKET_ERROR)
+    {
+        LOG("Falha ao enviar o pacote");
+        closesocket(*socket);
+    } 
+}
+
+void Client::update()
+{
+	const float speed = 2;
+	int hDir = inputs[0] - inputs[2];
+	int vDir = inputs[3] - inputs[1];
+	position[0] += hDir * 2;
+	position[1] += vDir * 2;
 }

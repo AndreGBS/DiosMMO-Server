@@ -38,6 +38,7 @@ private:
 
 	future<void> listenThread;
 	future<void> consoleThread;
+	future<void> updateThread;
 
 	promise<void> exitSignal;
 	future<void> exitFuture;
@@ -49,6 +50,7 @@ private:
 
 	void console();
 	void waitForConnections();
+	void update();
 };
 
 #endif
