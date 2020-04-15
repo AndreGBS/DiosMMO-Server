@@ -1,0 +1,1 @@
+templateButton_Create("buttonRegister", "Register", scrButtonRegister);

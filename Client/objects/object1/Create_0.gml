@@ -1,1 +1,0 @@
-show_message(md5_string_utf8("password"));

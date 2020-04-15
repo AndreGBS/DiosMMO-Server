@@ -1,0 +1,2 @@
+#macro FORM_TEXTFIELD 0
+#macro FORM_BUTTON 1
