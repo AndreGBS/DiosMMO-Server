@@ -1,6 +1,5 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <thread>
 #include <list>
 #include <memory>
 #include "Logger.h"
@@ -10,6 +9,7 @@
 #include "Definitions.h"
 #include <future>
 #include <iostream>
+#include <cstdint>
 
 using namespace std;
 
@@ -21,8 +21,7 @@ Client::Client(sockPtr socket)
 
 Client::Client(Client& client)
 {
-	socket = client.socket;
-	clientThread.swap(client.clientThread);
+	throw runtime_error("CLIENT NAO PODE SER COPIADO");
 }
 
 Client::~Client()
@@ -63,8 +62,7 @@ void Client::listen()
 
 void Client::startListen()
 {
-	clientThread = thread(listen, this);
-	clientThread.join();
+	clientThread = async(listen, this);
 }
 
 void Client::msgHandler(const char* buffer)
@@ -117,13 +115,24 @@ void Client::loginRequest(const char* buffer)
 
 	char response[2];
 	response[0] = MESSID_LOGIN_REQUEST;
+	response[1] = false;
+
 	if(row.size() > 0)
 	{
-		response[1] = true;
+		PID = Server::getInstance()->getNewPID(_this);
+		if(PID != INVALID_PID)
+		{
+			response[1] = true;
+			LOG("Logou com sucesso com o PID" + to_string(PID));
+		}
+		else
+		{
+			LOG("Servidor cheio");
+		}
 	}
 	else
 	{
-		response[1] = false;
+		LOG("Falha ao logar");
 	}
 
     int iResult = send(*socket, response, 2, 0);

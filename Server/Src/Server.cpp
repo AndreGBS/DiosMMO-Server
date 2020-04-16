@@ -10,6 +10,7 @@
 #include "Client.h"
 #include <pqxx/pqxx>
 #include <fstream>
+#include <cstdint>
 
 using namespace std;
 
@@ -150,6 +151,7 @@ void Server::waitForConnections()
             clientPtr client = make_shared<Client>(clientSocket);
             clientList.push_back(client);
             client->startListen();
+            client->_this = client;
         }
     }
 }
@@ -210,4 +212,19 @@ const list<clientPtr>& Server::getClientList()
 void Server::wait()
 {
     exitFuture.wait();
+}
+
+uint16_t Server::getNewPID(const clientPtr client)
+{
+    for(int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        if(PIDs[i] == nullptr)
+        {
+            if(client == nullptr)
+                cout << "kk\n";
+            PIDs[i] = client;
+            return i;
+        }
+    }
+    return INVALID_PID;
 }

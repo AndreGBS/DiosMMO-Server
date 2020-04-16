@@ -3,10 +3,11 @@
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <thread>
 #include <list>
 #include <memory>
 #include <mutex>
+#include <cstdint>
+#include <future>
 
 using namespace std;
 
@@ -22,8 +23,10 @@ public:
 	~Client();
 
 private:
+	shared_ptr<Client> _this;
+	uint16_t PID = 0;
 	sockPtr socket;
-	thread clientThread;
+	future<void> clientThread;
 	mutex updateMutex;
 	float position[2] = {200.0f, 200.0f};
 	bool inputs[4] = {false};

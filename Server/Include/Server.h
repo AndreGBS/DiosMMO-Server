@@ -10,6 +10,9 @@
 #include "UpdateManager.h"
 #include <pqxx/pqxx>
 #include <mutex>
+#include <vector>
+#include <cstdint>
+#include "Definitions.h"
 
 using namespace std;
 
@@ -31,6 +34,8 @@ public:
 	const pqxx::result query(const string& queryStr);
 	const list<clientPtr>& getClientList();
 
+	uint16_t getNewPID(const clientPtr client);
+	
 private:
 	pqxx::connection* pqConn;
 	SOCKET listenSocket = INVALID_SOCKET;
@@ -45,6 +50,8 @@ private:
 
 	promise<void> exitSignal;
 	future<void> exitFuture;
+
+	clientPtr PIDs[MAX_PLAYERS]; //Player ID
 
 	Server();
 	Server(const Server& sv);
