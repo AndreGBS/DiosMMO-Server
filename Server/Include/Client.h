@@ -6,6 +6,7 @@
 #include <thread>
 #include <list>
 #include <memory>
+#include <mutex>
 
 using namespace std;
 
@@ -15,7 +16,7 @@ class Client
 {
 public:
 	void update();
-	
+
 	Client(Client& client);
 	Client(sockPtr socket);
 	~Client();
@@ -23,6 +24,7 @@ public:
 private:
 	sockPtr socket;
 	thread clientThread;
+	mutex updateMutex;
 	float position[2] = {200.0f, 200.0f};
 	bool inputs[4] = {false};
 	void listen();

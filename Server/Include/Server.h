@@ -9,6 +9,7 @@
 #include "Client.h"
 #include "UpdateManager.h"
 #include <pqxx/pqxx>
+#include <mutex>
 
 using namespace std;
 

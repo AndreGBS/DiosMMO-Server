@@ -180,14 +180,19 @@ void Client::registerRequest(const char* buffer)
 
 void Client::playerInput(const char* buffer)
 {
+	updateMutex.lock();
 	for(int i = 0;i < 4; ++i)
 		inputs[i] = buffer[i+1];
+	updateMutex.unlock();
 }
 
 void Client::playerAttRequest(const char* buffer)
 {
+	updateMutex.lock();
 	int posX = (int)position[0];
 	int posY = (int)position[1];
+	updateMutex.unlock();
+
 	char response[sizeof(int)*2+1];
 
 	response[0] = MESSID_PLAYER_ATT_REQUEST;
@@ -205,8 +210,11 @@ void Client::playerAttRequest(const char* buffer)
 void Client::update()
 {
 	const float speed = 2;
+
+	updateMutex.lock();
 	int hDir = inputs[0] - inputs[2];
 	int vDir = inputs[3] - inputs[1];
 	position[0] += hDir * 2;
 	position[1] += vDir * 2;
+	updateMutex.unlock();
 }
