@@ -125,9 +125,9 @@ bool Server::initialize()
     }
 
     exitFuture = exitSignal.get_future();
+    updateManager.startUpdate();
     listenThread = async(waitForConnections, this);
     consoleThread = async(console, this);
-    updateThread = async(update, this);
 
     return true;
 }
@@ -166,16 +166,6 @@ void Server::console()
     }
 }
 
-void Server::update()
-{
-    while(!SERVER_EXITED)
-    {
-        for(const auto& client : clientList)
-            client->update();
-        Sleep(16);
-    }   
-}
-
 const future<void>& Server::getExitSignal()
 {
     return exitFuture;
@@ -210,6 +200,11 @@ const pqxx::row Server::query1(const string& queryStr)
         LOG("Exception " + string(e.what()));
     }
     return result;
+}
+
+const list<clientPtr>& Server::getClientList()
+{
+    return clientList;
 }
 
 void Server::wait()

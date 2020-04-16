@@ -7,6 +7,7 @@
 #include <list>
 #include <memory>
 #include "Client.h"
+#include "UpdateManager.h"
 #include <pqxx/pqxx>
 
 using namespace std;
@@ -26,7 +27,8 @@ public:
 
 	bool insertQuery(const string& queryStr);
 	const pqxx::row query1(const string& queryStr);
-	const pqxx::result query(const string& queryStr);	
+	const pqxx::result query(const string& queryStr);
+	const list<clientPtr>& getClientList();
 
 private:
 	pqxx::connection* pqConn;
@@ -35,10 +37,10 @@ private:
 	static Server* _this;
 	bool waitingForConnections = false;	
     WSADATA wsaData;
+    UpdateManager updateManager;
 
 	future<void> listenThread;
 	future<void> consoleThread;
-	future<void> updateThread;
 
 	promise<void> exitSignal;
 	future<void> exitFuture;
@@ -50,7 +52,6 @@ private:
 
 	void console();
 	void waitForConnections();
-	void update();
 };
 
 #endif

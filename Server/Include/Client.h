@@ -14,6 +14,8 @@ typedef shared_ptr<SOCKET> sockPtr;
 class Client
 {
 public:
+	void update();
+	
 	Client(Client& client);
 	Client(sockPtr socket);
 	~Client();
@@ -30,8 +32,6 @@ private:
 	void playerInput(const char* buffer);
 	void playerAttRequest(const char* buffer);
 	void msgHandler(const char * buffer);
-
-	void update();
 	
 	friend class Server;
 };

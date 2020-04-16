@@ -1,8 +1,8 @@
 CC=g++
-CFLAGS=-std=c++17 -lpqxx -lpq -lws2_32 
+CFLAGS=-std=c++17 -I".\Include" -lpqxx -lpq -lws2_32 
 
-edit: Server.o Logger.o Client.o
-	$(CC) -o .\Bin\x64\Server .\Src\Main.cpp .\Obj\Server.o .\Obj\Logger.o .\Obj\Client.o $(CFLAGS)
+edit: Server.o Logger.o Client.o UpdateManager.o
+	$(CC) -o .\Bin\x64\Server .\Src\Main.cpp .\Obj\Server.o .\Obj\Logger.o .\Obj\Client.o .\Obj\UpdateManager.o $(CFLAGS)
 
 Server.o: 
 	$(CC) -o .\Obj\Server.o -c .\Src\Server.cpp $(CFLAGS)
@@ -13,5 +13,7 @@ Client.o:
 Logger.o:
 	$(CC) -o .\Obj\Logger.o -c .\Src\Logger.cpp $(CFLAGS)
 
+UpdateManager.o:
+	$(CC) -o .\Obj\UpdateManager.o -c .\Src\UpdateManager.cpp $(CFLAGS)
 clean: 
 	del .\Obj\*.o
