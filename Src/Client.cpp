@@ -6,6 +6,7 @@
 #include "Client.h"
 #include "Server.h"
 #include "windows.h"
+#include "Buffer.h"
 #include "Definitions.h"
 #include <future>
 #include <iostream>
@@ -90,22 +91,12 @@ void Client::msgHandler(const char* buffer)
 
 void Client::loginRequest(const char* buffer)
 {
-	string username;
-	string password;
-
-	int index = 1;
-	while(buffer[index] != 0)
-	{
-		username += buffer[index];
-		++index;
-	}
-	++index;
-	while(buffer[index] != 0)
-	{
-		password += buffer[index];
-		++index;
-	}
-	
+	Buffer buff(buffer);
+	buff.seek(1);
+	string username = buff.readString();
+	string password = buff.readString();
+	LOG(username);
+	LOG(password);
 	Server* server = Server::getInstance();
 
 	string queryStr = 
@@ -202,9 +193,10 @@ void Client::playerAttRequest(const char* buffer)
 	int posY = (int)position[1];
 	updateMutex.unlock();
 
-	char response[sizeof(int)*2+1];
+	char response[sizeof(int)*2+sizeof(uint16_t)+1];
 
 	response[0] = MESSID_PLAYER_ATT_REQUEST;
+	memcpy(response+1, &PID, sizeof(uint16_t));
 	memcpy(response+1, &posX, sizeof(int));
 	memcpy(response+1+sizeof(int), &posY, sizeof(int));
 

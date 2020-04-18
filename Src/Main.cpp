@@ -3,8 +3,7 @@
 #include "Logger.h"
 #include <string>
 #include "Definitions.h"
-
-#pragma comment(lib, "Ws2_32.lib")
+#include "Buffer.h"
 
 using namespace std;
 
