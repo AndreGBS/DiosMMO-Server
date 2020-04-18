@@ -1,1 +1,0 @@
-sendTimer = 0;
