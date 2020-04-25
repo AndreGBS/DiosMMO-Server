@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include <memory>
-#include <string>
+#include <string.h>
 
 using namespace std;
 
@@ -14,16 +14,17 @@ public:
 	Buffer(const char* buff);
 	~Buffer();
 
-	template<typename T> void write(T input);
-	template<typename T> void writePtr(T input, size_t size);
-	template<typename T> T read();
-	template<typename T> void readPtr(T ptr, size_t size);
-	void writeString(const string& str);
-	string readString();
+	inline void reset(const char* buff);
+	template<typename T> inline void write(T input);
+	template<typename T> inline void writePtr(T input, size_t size);
+	template<typename T> inline T read();
+	template<typename T> inline void readPtr(T ptr, size_t size);
+	inline void writeString(const string& str);
+	inline string readString();
 
-	const char* get();
-	size_t tell();
-	void seek(const size_t position);
+	inline const char* get();
+	inline size_t tell();
+	inline void seek(const size_t position);
 
 private:
 	bool readOnly;
@@ -62,6 +63,51 @@ template<typename T> void Buffer::readPtr(T ptr, const size_t size)
 {
 	memcpy(ptr, buff+position, size);
 	position += size;
+}
+
+void Buffer::reset(const char* buff)
+{
+	if(!readOnly && buff != nullptr)
+		delete [] buff;
+		
+	buff = const_cast<char*>(buff);
+	position = 0;
+}
+const char * Buffer::get()
+{
+	return buff;
+}
+
+void Buffer::seek(const size_t position)
+{
+	this->position = position;
+}
+
+void Buffer::writeString(const string& str)
+{
+	if(readOnly)
+		return;
+
+	memcpy(buff+position, str.c_str(), str.size());
+	position += str.size();
+}
+
+string Buffer::readString()
+{
+	string output;
+	while(buff[position] != 0)
+	{
+		output += buff[position];
+		++position;
+	}
+	++position;
+
+	return output;
+}
+
+size_t Buffer::tell()
+{
+	return position;
 }
 
 #endif

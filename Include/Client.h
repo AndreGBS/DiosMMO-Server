@@ -1,17 +1,15 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <list>
 #include <memory>
 #include <mutex>
 #include <cstdint>
 #include <future>
+#include "Definitions.h"
+#include "Buffer.h"
 
 using namespace std;
-
-typedef shared_ptr<SOCKET> sockPtr;
 
 class Client
 {
@@ -19,7 +17,7 @@ public:
 	void update();
 
 	Client(Client& client);
-	Client(sockPtr socket);
+	Client(const sockPtr& socket);
 	~Client();
 
 private:
@@ -32,11 +30,11 @@ private:
 	bool inputs[4] = {false};
 	void listen();
 	void startListen();
-	void loginRequest(const char * buffer);
-	void registerRequest(const char* buffer);
-	void playerInput(const char* buffer);
-	void playerAttRequest(const char* buffer);
-	void msgHandler(const char * buffer);
+	void loginRequest(Buffer& buffer);
+	void registerRequest(Buffer& buffer);
+	void playerInput(Buffer& buffer);
+	void playerAttRequest(Buffer& buffer);
+	void msgHandler(Buffer& buffer, const int& size);
 	
 	friend class Server;
 };

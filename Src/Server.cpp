@@ -1,6 +1,4 @@
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <stdio.h>
+#include "stdio.h"
 #include <iostream>
 #include <future>
 #include <chrono>
@@ -11,6 +9,11 @@
 #include <pqxx/pqxx>
 #include <fstream>
 #include <cstdint>
+#include <sys/socket.h> 
+#include <netinet/in.h>
+#include <string>
+#include <unistd.h>
+#include <memory>
 
 using namespace std;
 
@@ -32,10 +35,6 @@ Server::Server(Server&& sv)
 Server::~Server()
 {
     Logger::print("Finalizando o server");
-    WSACancelBlockingCall();
-    shutdown(listenSocket, 1);
-    closesocket(listenSocket);
-    WSACleanup(); 
     Logger::print("Server finalizado");
     delete pqConn;
 }
@@ -64,6 +63,30 @@ bool Server::initialize()
 {
     LOG("Iniciando o servidor");
 
+    int opt = 1;
+    listenSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if(socket == 0)
+    {
+        LOG("Falha ao criar o listenSocket");
+        return false;
+    }
+
+    if(setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    {
+        LOG("Falha ao seta opções do socket");
+        return false;
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(DEFAULT_PORT);
+
+    if(bind(listenSocket, (sockaddr*) &address, sizeof(address)) < 0)
+    {
+        LOG("Falha no bind do listenSocket");
+        return false;
+    }
+
     LOG("Conectando ao banco de dados");
     try
     {
@@ -79,56 +102,11 @@ bool Server::initialize()
         return false;
     }
     LOG("Conectou com o banco de dados");
-    
-    int iResult;
-    iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-    if (iResult != 0)
-    {
-        LOG("Erro " + to_string(iResult) + " na inicialização do servidor");
-        return false;
-    }
-
-    struct addrinfo* result = NULL;
-    struct addrinfo hints;
-
-    ZeroMemory(&hints, sizeof (hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_PASSIVE;
-
-    iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
-    if (iResult != 0)
-    {
-        LOG("Erro " + to_string(iResult) + " na inicialização do servidor");
-        return false;
-    }
-
-    listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-
-    if (listenSocket == INVALID_SOCKET)
-    {
-        LOG("Erro " + to_string(WSAGetLastError()) + " na inicialização do socket");
-        freeaddrinfo(result);
-        WSACleanup();
-        return false;
-    }
-
-    iResult = bind( _this->listenSocket, result->ai_addr, (int)result->ai_addrlen);
-    freeaddrinfo(result);
-
-    if (listen(listenSocket, SOMAXCONN ) == SOCKET_ERROR)
-    {
-        LOG("Falha na inicalização do socket");
-        closesocket(listenSocket);
-        WSACleanup();
-        return false;
-    }
 
     exitFuture = exitSignal.get_future();
     updateManager.startUpdate();
-    listenThread = async(waitForConnections, this);
-    consoleThread = async(console, this);
+    listenThread = async(&Server::waitForConnections, this);
+    consoleThread = async(&Server::console, this);
 
     return true;
 }
@@ -137,14 +115,17 @@ void Server::waitForConnections()
 {
     LOG("Esperando por conexoes");
 
+    socklen_t addrlen = sizeof(address);
+    listen(listenSocket, 3);
     while(!SERVER_EXITED)
     {
-        sockPtr clientSocket = make_shared<SOCKET>();
+        sockPtr clientSocket = make_shared<int>();
 
-        *clientSocket = accept(listenSocket, NULL, NULL);
-        if (*clientSocket == INVALID_SOCKET)
+        *clientSocket = accept(listenSocket, (sockaddr*) &address, &addrlen);
+        LOG("Um novo client esta tentando se conectar");
+        if (*clientSocket < 0)
         {
-            LOG("Erro" + to_string(WSAGetLastError()) +" ao aceitar nova conexao");
+            LOG("Erro ao aceitar nova conexao");
         }
         else
         {

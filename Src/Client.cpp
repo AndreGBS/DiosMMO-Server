@@ -1,20 +1,19 @@
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <list>
 #include <memory>
 #include "Logger.h"
 #include "Client.h"
 #include "Server.h"
-#include "windows.h"
 #include "Buffer.h"
 #include "Definitions.h"
 #include <future>
 #include <iostream>
 #include <cstdint>
+#include <unistd.h>
+#include <string>
 
 using namespace std;
 
-Client::Client(sockPtr socket)
+Client::Client(const sockPtr& socket)
 	: socket(socket)
 {
 	LOG("Um cliente conectou");
@@ -28,73 +27,72 @@ Client::Client(Client& client)
 Client::~Client()
 {
 	LOG("Um cliente desconectou");
-	closesocket(*socket);
+	//closesocket(*socket);
 }
 
 void Client::listen()
 {
-	int iResult;
+	int packetSize;
 	char* buffer = new char[DEFAULT_BUFLEN];
+	Buffer buff(buffer);
     do 
     { 
-        int iSendResult;
-        int length = DEFAULT_BUFLEN;
-
-        iResult = recv(*socket, buffer, length, 0);
-        if (iResult > 0)
+        packetSize = read(*socket, buffer, DEFAULT_BUFLEN);
+        if (packetSize > 0)
         {
-           	msgHandler(buffer);           
+			buff.seek(0);
+        	msgHandler(buff, packetSize);           
         }
-        else if (iResult == 0)
+        else if (packetSize == 0)
         {
             LOG("Um cliente desconectou");
-            closesocket(*socket);
+            close(*socket);
             return;
         }
         else
         {
         	LOG("Falha na conexão");
-            closesocket(*socket);
+           	close(*socket);
             return;
         }
-    } while (iResult > 0 && !SERVER_EXITED);
+    } while (packetSize > 0 && !SERVER_EXITED);
     delete [] buffer;
 }
 
 void Client::startListen()
 {
-	clientThread = async(listen, this);
+	clientThread = async(&Client::listen, this);
 }
 
-void Client::msgHandler(const char* buffer)
+void Client::msgHandler(Buffer& buffer, const int& size)
 {
-	int messid = buffer[0];
-	switch(messid)
+	while(buffer.tell() < size)
 	{
-		case MESSID_LOGIN_REQUEST:
-			loginRequest(buffer);
-		break;
+		switch(buffer.read<uint8_t>())
+		{
+			case MESSID_LOGIN_REQUEST:
+				loginRequest(buffer);
+			break;
 
-		case MESSID_REGISTER_REQUEST:
-			registerRequest(buffer);
-		break;
+			case MESSID_REGISTER_REQUEST:
+				registerRequest(buffer);
+			break;
 
-		case MESSID_PLAYER_INPUT:
-			playerInput(buffer);
-		break;
+			case MESSID_PLAYER_INPUT:
+				playerInput(buffer);
+			break;
 
-		case MESSID_PLAYER_ATT_REQUEST:
-			playerAttRequest(buffer);
-		break;
+			case MESSID_PLAYER_ATT_REQUEST:
+				playerAttRequest(buffer);
+			break;
+		}
 	}
 }
 
-void Client::loginRequest(const char* buffer)
+void Client::loginRequest(Buffer& buffer)
 {
-	Buffer buff(buffer);
-	buff.seek(1);
-	string username = buff.readString();
-	string password = buff.readString();
+	string username = buffer.readString();
+	string password = buffer.readString();
 	LOG(username);
 	LOG(password);
 	Server* server = Server::getInstance();
@@ -126,32 +124,19 @@ void Client::loginRequest(const char* buffer)
 		LOG("Falha ao logar");
 	}
 
-    int iResult = send(*socket, response, 2, 0);
-    if (iResult == SOCKET_ERROR)
+  	int bytesSent = send(*socket, response, 2, 0);
+    if (bytesSent < 0)
     {
         LOG("Falha ao enviar o pacote");
-        closesocket(*socket);
-    }        
+        close(*socket);
+    } 
 }
 
-void Client::registerRequest(const char* buffer)
+void Client::registerRequest(Buffer& buffer)
 {
-	string username;
-	string password;
+	string username = buffer.readString();
+	string password = buffer.readString();
 
-	int index = 1;
-	while(buffer[index] != 0)
-	{
-		username += buffer[index];
-		++index;
-	}
-	++index;
-	while(buffer[index] != 0)
-	{
-		password += buffer[index];
-		++index;
-	}
-	
 	Server* server = Server::getInstance();
 
 	string queryStr = 
@@ -170,23 +155,23 @@ void Client::registerRequest(const char* buffer)
 		LOG("Falha no cadastro");
 	}
 
-    int iResult = send(*socket, response, 2, 0);
-    if (iResult == SOCKET_ERROR)
+   	int bytesSent = send(*socket, response, 2, 0);
+    if (bytesSent < 0)
     {
         LOG("Falha ao enviar o pacote");
-        closesocket(*socket);
-    }        
-}
+        close(*socket);
+    }  
+} 
 
-void Client::playerInput(const char* buffer)
+void Client::playerInput(Buffer& buffer)
 {
 	updateMutex.lock();
 	for(int i = 0;i < 4; ++i)
-		inputs[i] = buffer[i+1];
+		inputs[i] = buffer.read<uint8_t>();
 	updateMutex.unlock();
 }
 
-void Client::playerAttRequest(const char* buffer)
+void Client::playerAttRequest(Buffer& buffer)
 {
 	updateMutex.lock();
 	int posX = (int)position[0];
@@ -200,11 +185,11 @@ void Client::playerAttRequest(const char* buffer)
 	memcpy(response+1, &posX, sizeof(int));
 	memcpy(response+1+sizeof(int), &posY, sizeof(int));
 
-    int iResult = send(*socket, response, sizeof(response), 0);
-    if (iResult == SOCKET_ERROR)
+    int bytesSent = send(*socket, response, sizeof(response), 0);
+    if (bytesSent < 0)
     {
         LOG("Falha ao enviar o pacote");
-        closesocket(*socket);
+        close(*socket);
     } 
 }
 
@@ -215,7 +200,7 @@ void Client::update()
 	updateMutex.lock();
 	int hDir = inputs[0] - inputs[2];
 	int vDir = inputs[3] - inputs[1];
-	position[0] += hDir * 2;
-	position[1] += vDir * 2;
+	position[0] += hDir * 0.2;
+	position[1] += vDir * 0.2;
 	updateMutex.unlock();
 }

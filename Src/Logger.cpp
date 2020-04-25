@@ -1,7 +1,6 @@
 #include "Logger.h"
 #include <iostream>
 #include <string>
-#include "windows.h"
 #include <fstream>
 #include <chrono>
 #include "Definitions.h"
@@ -12,12 +11,11 @@ using namespace std;
 using namespace std::chrono;
 
 Logger* Logger::_this = nullptr;
-ofstream Logger::logFile = ofstream("log.txt", ofstream::app);
+ofstream Logger::logFile = ofstream("./log.txt", ofstream::app);
 mutex Logger::mut = mutex();
 
 Logger::Logger()
 {
-	system("cls");
 	cout << "DiosMMO Server. Versao " << SERVER_VERSION	<< endl;;
 }
 

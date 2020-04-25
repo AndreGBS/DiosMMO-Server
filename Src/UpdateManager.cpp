@@ -1,18 +1,15 @@
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <thread>
 #include <list>
 #include <memory>
 #include "Logger.h"
 #include "Client.h"
-#include "Server.h"
-#include "UpdateManager.h"
-#include "windows.h"
-#include "Logger.h"
 #include "Definitions.h"
+#include "UpdateManager.h"
+#include "Server.h"
 #include <future>
 #include <iostream>
 #include <mutex>
+#include <unistd.h>
 
 using namespace std;
 
@@ -36,7 +33,7 @@ UpdateManager::~UpdateManager()
 
 void UpdateManager::startUpdate()
 {
-	updateThread = async(update, this);
+	updateThread = async(&UpdateManager::update, this);
 }
 
 void UpdateManager::update()
@@ -46,6 +43,6 @@ void UpdateManager::update()
     {
         for(const auto& client : clientList)
             client->update();
-        Sleep(16);
+        usleep(15);
     } 
 }

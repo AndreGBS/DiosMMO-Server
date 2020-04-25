@@ -1,0 +1,7 @@
+Sat Apr 25 13:31:04:381 >> UpdateManager::UpdateManager: UpdateManager iniciado
+Sat Apr 25 13:31:04:381 >> Server::Server: Instancia do servidor criada
+Sat Apr 25 13:31:04:381 >> Server::initialize: Iniciando o servidor
+Sat Apr 25 13:31:04:381 >> Server::initialize: Conectando ao banco de dados
+Sat Apr 25 13:31:04:406 >> Server::initialize: Falha ao conectar com o banco de dados
+Sat Apr 25 13:31:04:406 >> Server::initialize: FATAL:  role "root" does not exist
+

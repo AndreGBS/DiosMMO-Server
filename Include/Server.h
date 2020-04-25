@@ -1,8 +1,6 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <future>
 #include <list>
 #include <memory>
@@ -13,6 +11,7 @@
 #include <vector>
 #include <cstdint>
 #include "Definitions.h"
+#include <netinet/in.h>
 
 using namespace std;
 
@@ -38,11 +37,12 @@ public:
 	
 private:
 	pqxx::connection* pqConn;
-	SOCKET listenSocket = INVALID_SOCKET;
+	int listenSocket;
+	sockaddr_in  address;
 	list<clientPtr> clientList;
 	static Server* _this;
 	bool waitingForConnections = false;	
-    WSADATA wsaData;
+
     UpdateManager updateManager;
 
 	future<void> listenThread;
