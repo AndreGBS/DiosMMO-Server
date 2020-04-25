@@ -201,8 +201,6 @@ uint16_t Server::getNewPID(const clientPtr client)
     {
         if(PIDs[i] == nullptr)
         {
-            if(client == nullptr)
-                cout << "kk\n";
             PIDs[i] = client;
             return i;
         }
